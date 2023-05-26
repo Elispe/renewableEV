@@ -13,8 +13,7 @@ from Vehicle import Vehicle
 from Request import RideRequest
 
 # Seed corresponds to SLURM_ARRAY_TASK_ID
-#seed = int(sys.argv[1])
-seed = 1
+seed = int(sys.argv[1])
 np.random.seed(seed)
 
 # Fleet size
@@ -44,15 +43,15 @@ elist = [(1, 2), (1, 3), (2, 1), (2, 3), (2, 4), (2, 5), (3, 1), (3, 2), (3, 4),
          (8, 9),
          (9, 6), (9, 7), (9, 8)]
 g.add_edges_from(elist)
-n = g.number_of_nodes()
+numNodes = g.number_of_nodes()
 
 # Initialize vehicle positions and soc.
 np.random.seed(0)
 vehicles = []
-for j in range(n_veh // n):
-    vehicles.extend([Vehicle(pos, Vehicle.full_charge) for pos in range(1, n + 1)])
+for j in range(n_veh // numNodes):
+    vehicles.extend([Vehicle(pos, Vehicle.full_charge) for pos in range(1, numNodes + 1)])
 for j in range(n_veh - len(vehicles)):
-    vehicles.append(Vehicle(np.random.randint(1, n + 1), Vehicle.full_charge))
+    vehicles.append(Vehicle(np.random.randint(1, numNodes + 1), Vehicle.full_charge))
 
 # Randomize the initial soc, otherwise comment below
 for j, veh in enumerate(vehicles):
@@ -144,7 +143,7 @@ for k in range(tData.num_min):
         # Compute cost of reaching the pickup point for each vehicle
         for j, veh in enumerate(vehicles):
             start_path[j] = nx.shortest_path(g, source=veh.getPosition(),
-                                             target=ride_req.getPickupPoint())  # Path from current vehicle node to pick-up node
+                                             target=ride_req.getPickupPoint())  # Path from vehicle node to pick-up node
             if not veh.isAvailable() or \
                     veh.getSoc() < min_consume + len(start_path[j]) + len(ride_req.getPath()) - 2 or \
                     veh.getSoc() < Vehicle.min_charge or \
@@ -211,7 +210,7 @@ for k in range(tData.num_min):
             prob += pulp.lpSum(x_list[i + n_assign * n] for n in range(n_assign)) <= 1, "c_ineq" + str(
                 i)  # sum row elements
 
-        prob.solve(pulp.COIN_CMD(msg=0))
+        prob.solve(pulp.COIN_CMD(msg=False))
 
         for v in prob.variables():
             index = int(v.name[1:])
@@ -263,12 +262,12 @@ print("QoS: ", 100 - (sum(miss_ride_time) / tData.numRequestsRed * 100))
 
 # Save results for later
 np.save('h_format', h_format)
-np.save('miss_ride_time'+str(seed), miss_ride_time)
-np.save('y_power_cars'+str(seed), y_power_cars)
-np.save('high_battery_time'+str(seed), high_battery_time)
-np.save('int_battery_time'+str(seed), int_battery_time)
-np.save('low_battery_time'+str(seed), low_battery_time)
-np.save('ev_ride_time'+str(seed), ev_ride_time)
-np.save('ev_charge_time'+str(seed), ev_charge_time)
-np.save('ev_idle_time'+str(seed), ev_idle_time)
-
+np.save('numReq', tData.numRequestsRed)
+np.save('miss_ride_time' + str(seed), miss_ride_time)
+np.save('y_power_cars' + str(seed), y_power_cars)
+np.save('high_battery_time' + str(seed), high_battery_time)
+np.save('int_battery_time' + str(seed), int_battery_time)
+np.save('low_battery_time' + str(seed), low_battery_time)
+np.save('ev_ride_time' + str(seed), ev_ride_time)
+np.save('ev_charge_time' + str(seed), ev_charge_time)
+np.save('ev_idle_time' + str(seed), ev_idle_time)
