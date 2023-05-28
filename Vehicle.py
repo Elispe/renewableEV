@@ -6,54 +6,63 @@ Vehicle class
 class Vehicle:
     min_charge = 6
     int_charge = 31
-    full_charge = 50 # kWh
-    ev_charging_count = 0
+    full_charge = 50  # kWh
+    ev_charging_count = 0  # number of EVs currently charging
+    ev_capacity = 4  # max number of passengers
 
     def __init__(self, position, soc):
         self.position = position
         self.soc = soc
+        self.capacity = Vehicle.ev_capacity
+        self.path = []
+        self.last_update = 0
+        self.charging = False
+        self.request = None
+        self.estimated_charged = -1
+        self.estimated_arrival = -1
+        self.removed = True
 
     def __str__(self):
         return f"Vehicle at node {self.position} with soc {self.soc}"
 
-    def setSoc(self, newSoc):
-        self.soc = newSoc
+    def set_soc(self, new_soc):
+        self.soc = new_soc
 
-    def getSoc(self):
+    def get_soc(self):
         return self.soc
 
-    def setPosition(self, newPosition):
-        self.position = newPosition
+    def set_position(self, new_position):
+        self.position = new_position
 
-    def getPosition(self):
+    def get_position(self):
         return self.position
 
-    def setCapacity(self, capacity):
-        self.capacity = capacity
+    def reset_capacity(self):
+        self.capacity = Vehicle.ev_capacity
 
-    def decreaseCapacity(self):
+    def decrease_capacity(self):
         self.capacity -= 1
 
-    def assignRequest(self, request):
+    def get_capacity(self):
+        return self.capacity
+
+    def assign_request(self, request):
         self.request = request
 
-    def assignPath(self, path):
+    def assign_path(self, path):
         self.path = path
 
-    def getTotalPath(self):
+    def get_total_path(self):
         return self.path
 
-    def isAvailable(self):
-        if not hasattr(self, "request") or self.request is None:
+    def is_available(self):
+        if self.request is None:
             return True
         else:
             return False
 
-    def isCharging(self):
-        if not hasattr(self, "charging"):
-            return False
-        else:
-            return self.charging
+    def is_charging(self):
+        return self.charging
 
     def charge(self, charge_rate=None):
         if charge_rate is None:
@@ -72,20 +81,38 @@ class Vehicle:
         if self.soc < 0:
             raise ValueError("Negative SOC")
 
-    def terminateRequest(self):
+    def terminate_request(self):
         self.request = None
 
-    def getRequest(self):
+    def get_request(self):
         return self.request
-    def getEstimatedArrival(self):
-        if not hasattr(self, "estimated_arrival"):
-            return -1
-        else:
-            return self.estimated_arrival
 
-    def setEstimatedArrival(self, estimated_arrival):
+    def get_estimated_arrival(self):
+        return self.estimated_arrival
+
+    def set_estimated_arrival(self, estimated_arrival):
         self.estimated_arrival = estimated_arrival
 
+    def get_estimated_charged(self):
+        return self.estimated_charged
 
+    def set_estimated_charged(self, estimated_charged):
+        self.estimated_charged = estimated_charged
 
+    def is_removed(self):
+        return self.removed
 
+    def remove(self):
+        if self.removed:
+            self.removed = False
+        else:
+            self.removed = True
+
+    def shorten_path(self):
+        self.path.pop(0)
+
+    def update(self, time):
+        self.last_update = time
+
+    def get_last_update(self):
+        return self.last_update

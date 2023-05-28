@@ -6,7 +6,6 @@ import networkx as nx
 import pulp
 import tripData as tData
 import time
-import functions as f
 import sys
 
 from Vehicle import Vehicle
@@ -55,7 +54,7 @@ for j in range(n_veh - len(vehicles)):
 
 # Randomize the initial soc, otherwise comment below
 for j, veh in enumerate(vehicles):
-    veh.setSoc(random_soc[j])
+    veh.set_soc(random_soc[j])
 
 # Track charging
 y_power_cars = []
@@ -92,19 +91,19 @@ for k in range(tData.num_min):
     # Update vehicle positions
     for veh in vehicles:
         # If vehicle reaches passenger final destination
-        if not veh.isAvailable() and isinstance(veh.request, RideRequest) and veh.getEstimatedArrival() <= k:
-            veh.setPosition(veh.getRequest().getDestination())
-            veh.terminateRequest()  # Vehicle again available
+        if not veh.is_available() and isinstance(veh.request, RideRequest) and veh.get_estimated_arrival() <= k:
+            veh.set_position(veh.get_request().get_destination())
+            veh.terminate_request()  # Vehicle again available
         # If vehicle runs out of battery ---> must charge, becomes unavailable
-        if veh.isAvailable() and not veh.isCharging() and veh.getSoc() < Vehicle.min_charge:
+        if veh.is_available() and not veh.is_charging() and veh.get_soc() < Vehicle.min_charge:
             veh.charge()
 
     # Update vehicle state-of-charge
     # If vehicle is fully charged, disconnect
     for veh in vehicles:
-        if veh.getEstimatedArrival() >= k:
+        if veh.get_estimated_arrival() >= k:
             veh.discharge(discharge_rate)
-        elif veh.isCharging():
+        elif veh.is_charging():
             veh.charge(charge_rate)
 
     # Track SOC status
@@ -112,9 +111,9 @@ for k in range(tData.num_min):
     int_soc_count = 0
     high_soc_count = 0
     for veh in vehicles:
-        if veh.getSoc() < Vehicle.min_charge:
+        if veh.get_soc() < Vehicle.min_charge:
             low_soc_count += 1
-        elif veh.getSoc() < Vehicle.int_charge:
+        elif veh.get_soc() < Vehicle.int_charge:
             int_soc_count += 1
         else:
             high_soc_count += 1
@@ -125,29 +124,28 @@ for k in range(tData.num_min):
 
     # Track EV availability
     riding_ev_count = 0
-    charging_ev_count = 0  # TO DO check if I can remove this variable and  use the class attribute instead
     for v in vehicles:
-        if hasattr(v, "request") and isinstance(v.getRequest(), RideRequest):
+        if isinstance(v.get_request(), RideRequest):
             riding_ev_count += 1
-        elif v.isCharging():
-            charging_ev_count += 1
     ev_ride_time.append(riding_ev_count)
-    ev_charge_time.append(charging_ev_count)
-    ev_idle_time.append(n_veh - (riding_ev_count + charging_ev_count))
+    ev_charge_time.append(Vehicle.ev_charging_count)
+    ev_idle_time.append(n_veh - (riding_ev_count + Vehicle.ev_charging_count))
 
     # Generate a ride request
     for i in range(numRideReq):
-        ride_req = f.create_ride_request(PULoc[i], DOLoc[i], k, g)
-        req_vec.insert(req_idx, ride_req)  # TO DO check if I need req_vec
+        # Create a ride request
+        ride_req = RideRequest(PULoc[i], DOLoc[i], k, nx.shortest_path(g, source=PULoc[i], target=DOLoc[i]))
+        req_vec.insert(req_idx, ride_req)
 
         # Compute cost of reaching the pickup point for each vehicle
         for j, veh in enumerate(vehicles):
-            start_path[j] = nx.shortest_path(g, source=veh.getPosition(),
-                                             target=ride_req.getPickupPoint())  # Path from vehicle node to pick-up node
-            if not veh.isAvailable() or \
-                    veh.getSoc() < min_consume + len(start_path[j]) + len(ride_req.getPath()) - 2 or \
-                    veh.getSoc() < Vehicle.min_charge or \
-                    veh.isCharging() or \
+            start_path[j] = nx.shortest_path(g, source=veh.get_position(),
+                                             target=ride_req.get_origin())  # Path from vehicle node to pick-up node
+            if not veh.is_available() or \
+                    veh.get_soc() < min_consume + (
+                    len(start_path[j]) + len(ride_req.get_path()) - 2) * travel_edge_time * discharge_rate or \
+                    veh.get_soc() < Vehicle.min_charge or \
+                    veh.is_charging() or \
                     delta_ride < len(start_path[j]) - 1:
                 start_costs[j] = infeasib_cost
             else:
@@ -227,12 +225,12 @@ for k in range(tData.num_min):
         veh_idx = X[:, i].tolist().index(1)
         if C_X[veh_idx][i] > infeasib_threas:  # Skip unfeasible requests
             continue
-        vehicles[veh_idx].assignRequest(req_vec[i])  # Assign request to vehicle
+        vehicles[veh_idx].assign_request(req_vec[i])  # Assign request to vehicle
         if isinstance(req_vec[i], RideRequest):
             paths[i][veh_idx].pop()
-            vehicles[veh_idx].assignPath(paths[i][veh_idx] + req_vec[i].getPath())  # Assign path (pickup + ride)
-            vehicles[veh_idx].setEstimatedArrival(
-                k + (len(vehicles[veh_idx].getTotalPath()) - 1) * travel_edge_time + min_travel_time)
+            vehicles[veh_idx].assign_path(paths[i][veh_idx] + req_vec[i].get_path())  # Assign path (pickup + ride)
+            vehicles[veh_idx].set_estimated_arrival(
+                k + (len(vehicles[veh_idx].get_total_path()) - 1) * travel_edge_time + min_travel_time)
         else:
             raise ValueError("Wrong request assignment")
 
@@ -240,7 +238,7 @@ for k in range(tData.num_min):
 
     count_assigned_rides = 0
     for v in vehicles:
-        if hasattr(v, "request") and v.getRequest() in req_vec and isinstance(v.getRequest(), RideRequest):
+        if v.get_request() in req_vec and isinstance(v.get_request(), RideRequest):
             count_assigned_rides += 1
     if count_assigned_rides == req_idx:
         miss_ride_time.append(0)
@@ -261,13 +259,14 @@ print("Missed ride-req, sum min by min: ", sum(miss_ride_time))
 print("QoS: ", 100 - (sum(miss_ride_time) / tData.numRequestsRed * 100))
 
 # Save results for later
-np.save('h_format', h_format)
-np.save('numReq', tData.numRequestsRed)
-np.save('miss_ride_time' + str(seed), miss_ride_time)
-np.save('y_power_cars' + str(seed), y_power_cars)
-np.save('high_battery_time' + str(seed), high_battery_time)
-np.save('int_battery_time' + str(seed), int_battery_time)
-np.save('low_battery_time' + str(seed), low_battery_time)
-np.save('ev_ride_time' + str(seed), ev_ride_time)
-np.save('ev_charge_time' + str(seed), ev_charge_time)
-np.save('ev_idle_time' + str(seed), ev_idle_time)
+path = ''
+np.save(path + 'h_format', h_format)
+np.save(path + 'numReq', tData.numRequestsRed)
+np.save(path + 'miss_ride_time' + str(seed), miss_ride_time)
+np.save(path + 'y_power_cars' + str(seed), y_power_cars)
+np.save(path + 'high_battery_time' + str(seed), high_battery_time)
+np.save(path + 'int_battery_time' + str(seed), int_battery_time)
+np.save(path + 'low_battery_time' + str(seed), low_battery_time)
+np.save(path + 'ev_ride_time' + str(seed), ev_ride_time)
+np.save(path + 'ev_charge_time' + str(seed), ev_charge_time)
+np.save(path + 'ev_idle_time' + str(seed), ev_idle_time)
