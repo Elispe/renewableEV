@@ -25,6 +25,7 @@ np.random.seed(seed)
 n_veh = 100
 
 # PV generation profile, select data to import
+# Warning: This file covers 24 hs only.
 pv_prof = tData.pv_sunny
 # pv_prof = tData.pv_cloud_am
 # pv_prof = tData.pv_cloud_pm
@@ -495,16 +496,17 @@ tot_Pref = sum([sum(i) for i in y_Pref_current])
 print("Power lost: " + str(round((lost_power_percent / tot_Pref) * 100, 2)) + "%")
 
 # Save results for later
-np.save('h_format', h_format)
-np.save('numReq', tData.numRequestsRed)
-np.save('y_Pref_current', y_Pref_current)
-np.save('miss_ride_time' + str(seed), miss_ride_time)
-np.save('y_power_cars' + str(seed), y_power_cars)
-np.save('high_battery_time' + str(seed), high_battery_time)
-np.save('int_battery_time' + str(seed), int_battery_time)
-np.save('low_battery_time' + str(seed), low_battery_time)
-np.save('ev_ride_time' + str(seed), ev_ride_time)
-np.save('ev_charge_time' + str(seed), ev_charge_time)
-np.save('ev_idle_time' + str(seed), ev_idle_time)
-np.save('incent_charge_assigned' + str(seed), incent_charge_assigned)
-np.save('incent_ride_assigned' + str(seed), incent_ride_assigned)
+path = ''
+np.save(path + 'h_format', h_format)
+np.save(path + 'numReq', tData.numRequestsRed)
+np.save(path + 'y_Pref_current', y_Pref_current)
+np.save(path + 'miss_ride_time' + str(seed), miss_ride_time)
+np.save(path + 'y_power_cars' + str(seed), y_power_cars)
+np.save(path + 'high_battery_time' + str(seed), high_battery_time)
+np.save(path + 'int_battery_time' + str(seed), int_battery_time)
+np.save(path + 'low_battery_time' + str(seed), low_battery_time)
+np.save(path + 'ev_ride_time' + str(seed), ev_ride_time)
+np.save(path + 'ev_charge_time' + str(seed), ev_charge_time)
+np.save(path + 'ev_idle_time' + str(seed), ev_idle_time)
+np.save(path + 'incent_charge_assigned' + str(seed), incent_charge_assigned)
+np.save(path + 'incent_ride_assigned' + str(seed), incent_ride_assigned)

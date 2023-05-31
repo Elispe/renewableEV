@@ -31,8 +31,9 @@ for i in range(2, num_iter + 1):
     ev_ride_time += np.load('ev_ride_time' + str(i) + '.npy')
     ev_charge_time += np.load('ev_charge_time' + str(i) + '.npy')
     ev_idle_time += np.load('ev_idle_time' + str(i) + '.npy')
-    incent_charge_assigned += np.load('incent_charge_assigned' + str(i) + '.npy')
-    incent_ride_assigned += np.load('incent_ride_assigned' + str(i) + '.npy')
+    if case_name == "rideSharing":
+        incent_charge_assigned += np.load('incent_charge_assigned' + str(i) + '.npy')
+        incent_ride_assigned += np.load('incent_ride_assigned' + str(i) + '.npy')
 
 # Average data, not rounded
 y_power_cars = y_power_cars / num_iter

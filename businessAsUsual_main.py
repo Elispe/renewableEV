@@ -6,6 +6,7 @@ import networkx as nx
 import pulp
 import tripData as tData
 import time
+import datetime
 import sys
 
 from Vehicle import Vehicle
@@ -76,6 +77,10 @@ for k in range(tData.num_min):
     minute = k + tData.h_in * 60
     numRideReq = len(PULoc)
     h_format.append(time.strftime("%H:%M", time.gmtime(minute * 60)))
+    # to run over multiple days use code below instead and modify tripData.py
+    # dt = datetime.datetime(2022, 3, 1) - datetime.datetime(1970, 1, 1)
+    # minutessince = int(dt.total_seconds() / 60)
+    # h_format.append(time.strftime("%b %d %H:%M", time.gmtime((minutessince+minute) * 60)))
 
     print("*** Minute: " + str(k) + " ***")
 
