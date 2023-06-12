@@ -1,4 +1,4 @@
-# This is the main Python script for the business-as-usual case.
+# This is the main Python script for case1 and case2.
 # Both ride and charge requests are sent to the ride-service provider.
 # Include ride-sharing option
 
