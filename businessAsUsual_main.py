@@ -261,12 +261,12 @@ print("  --- Vehicles with low battery: ", low_battery_time[-1])
 print("  --- Vehicles with int battery: ", int_battery_time[-1])
 print("  --- Vehicles with high battery: ", high_battery_time[-1])
 print("Missed ride-req, sum min by min: ", sum(miss_ride_time))
-print("QoS: ", 100 - (sum(miss_ride_time) / tData.numRequestsRed * 100))
+print("QoS: ", 100 - (sum(miss_ride_time) / tData.tot_num_requests_red * 100))
 
 # Save results for later
 path = ''
 np.save(path + 'h_format', h_format)
-np.save(path + 'numReq', tData.numRequestsRed)
+np.save(path + 'numReq', tData.tot_num_requests_red)
 np.save(path + 'miss_ride_time' + str(seed), miss_ride_time)
 np.save(path + 'y_power_cars' + str(seed), y_power_cars)
 np.save(path + 'high_battery_time' + str(seed), high_battery_time)

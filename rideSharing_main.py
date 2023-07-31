@@ -8,6 +8,7 @@ import pulp
 import tripData as tData
 import time
 import cvxpy as cp
+import datetime
 import sys
 
 from Vehicle import Vehicle
@@ -24,12 +25,13 @@ np.random.seed(seed)
 # Fleet size
 n_veh = 100
 
-# PV generation profile, select data to import
-# Warning: This file covers 24 hs only.
-pv_prof = tData.pv_sunny
-# pv_prof = tData.pv_cloud_am
-# pv_prof = tData.pv_cloud_pm
-charge_req_prob = np.array(pv_prof)
+# generation profile, select data to import depending on time window
+sunny_1day = np.array(tData.pv_sunny)
+cloud_am_1day = np.array(tData.pv_cloud_am)
+# cloud_pm_1day = np.array(tData.pv_cloud_pm)
+charge_req_prob = sunny_1day
+# if more than 1 day
+# charge_req_prob = np.concatenate((sunny_1day, cloud_am_1day, sunny_1day))
 
 # Variable initialization
 delta_ride = 2  # Max zones away from customer for pick-up
@@ -47,7 +49,7 @@ station_power = 25  # kW generated at peak power
 
 # Random SOC array
 random_soc = [np.random.uniform(Vehicle.min_charge, Vehicle.full_charge) for n in range(n_veh)]
-random_noise = [np.random.binomial(1, charge_req_prob[minu]) for minu in range(24 * 60)]
+random_noise = [np.random.binomial(1, charge_req_prob[minu]) for minu in range(24 * tData.tot_day * 60)]
 
 # DiGraph - unweighted
 g = nx.DiGraph()
@@ -72,7 +74,6 @@ for j in range(n_veh - len(vehicles)):
 for j, veh in enumerate(vehicles):
     veh.set_soc(random_soc[j])
 
-
 # Track charging
 y_Pref_current = []
 y_power_cars = []
@@ -93,17 +94,21 @@ incent_ride_assigned = []
 incent_charge_assigned = []
 
 for k in range(tData.num_min):
+    minute = k + tData.h_in * 60
     PULoc = tData.records[k][0]
     DOLoc = tData.records[k][1]
-    h_bid = [np.random.uniform(tData.h_aux_min[k], tData.h_aux[k]) for i in range(5)]  # TO DO: replace the 5 with code
-    b_min = [np.random.uniform(-tData.b_aux[k], 0) for i in range(len(station_nodes))]
-    b_max = [np.random.uniform(0, tData.b_aux[k]) for i in range(len(station_nodes))]
-    c_RES = tData.c_RES_total[k]
-    alpha_w = tData.alpha_w_total[k]
-    beta_w = tData.beta_w_total[k]
-    minute = k + tData.h_in * 60
-    numRideReq = len(PULoc)
+    num_ride_req = len(PULoc)
+    h_bid = [np.random.uniform(tData.h_aux_min[minute], tData.h_aux[minute]) for i in range(num_ride_req)]
+    b_min = [np.random.uniform(-tData.b_aux[minute], 0) for i in range(len(station_nodes))]
+    b_max = [np.random.uniform(0, tData.b_aux[minute]) for i in range(len(station_nodes))]
+    c_RES = tData.c_RES_total[minute]
+    alpha_w = tData.alpha_w_total[minute]
+    beta_w = tData.beta_w_total[minute]
     h_format.append(time.strftime("%H:%M", time.gmtime(minute * 60)))
+    # to run over multiple days use code below instead
+    # dt = datetime.datetime(2022, 3, 1) - datetime.datetime(1970, 1, 1)
+    # minutessince = int(dt.total_seconds() / 60)
+    # h_format.append(time.strftime("%b %d %H:%M", time.gmtime((minutessince + minute) * 60)))
 
     print("*** Minute: " + str(k) + " ***")
 
@@ -184,7 +189,7 @@ for k in range(tData.num_min):
     ev_idle_time.append(n_veh - (riding_ev_count + charging_ev_count))
 
     # Generate a ride request
-    for i in range(numRideReq):
+    for i in range(num_ride_req):
         # Create a ride request
         ride_req = RideRequest(PULoc[i], DOLoc[i], k, nx.shortest_path(g, source=PULoc[i], target=DOLoc[i]), h_bid[i],
                                np.random.binomial(1, sharing_prob))
@@ -486,7 +491,7 @@ print("  --- Vehicles with low battery: ", low_battery_time[-1])
 print("  --- Vehicles with int battery: ", int_battery_time[-1])
 print("  --- Vehicles with high battery: ", high_battery_time[-1])
 print("Missed ride-req, sum min by min: ", sum(miss_ride_time))
-print("QoS: ", 100 - (sum(miss_ride_time) / tData.numRequestsRed * 100))
+print("QoS: ", 100 - (sum(miss_ride_time) / tData.tot_num_requests_red * 100))
 lost_power_percent = 0
 for i in range(len(y_Pref_current)):
     if sum(y_Pref_current[i]) > sum(y_power_cars[i]):
@@ -498,7 +503,7 @@ print("Power lost: " + str(round((lost_power_percent / tot_Pref) * 100, 2)) + "%
 # Save results for later
 path = ''
 np.save(path + 'h_format', h_format)
-np.save(path + 'numReq', tData.numRequestsRed)
+np.save(path + 'numReq', tData.tot_num_requests_red)
 np.save(path + 'y_Pref_current', y_Pref_current)
 np.save(path + 'miss_ride_time' + str(seed), miss_ride_time)
 np.save(path + 'y_power_cars' + str(seed), y_power_cars)

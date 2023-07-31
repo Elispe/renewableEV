@@ -51,24 +51,26 @@ one_min = datetime.timedelta(seconds=60)
 num_min = 18*60 # 18 hours
 
 records = {}
-numRequestsRed = 0
+tot_num_requests_red = 0
 
 for i in range(num_min):
     mask9min = (final9['tpep_pickup_datetime'] >= ini) & (final9['tpep_pickup_datetime'] < ini + one_min)
     final9min = final9.loc[mask9min]
-    numRequests = len(final9min)
+    num_requests = len(final9min)
     PU_arr = final9min['PUArea'].tolist()
     DO_arr = final9min['DOArea'].tolist()
 
     # print(str(numRequests) + " requests between " + str(ini) + " and " + str(ini + one_min))
     scalingFactor = 8
-    # print("Keep: " + str(round(numRequests / scalingFactor)))
-    numRequestsRed += round(numRequests / scalingFactor)
+    num_requests_red = round(num_requests / scalingFactor)
+    print("Keep: ", num_requests_red)
+
+    tot_num_requests_red += num_requests_red
 
     # Scale down the number of requests/minute by scalingFactor
     index = []
-    while len(index) < round(numRequests / scalingFactor):
-        rand_num = np.random.randint(0, numRequests)
+    while len(index) < num_requests_red:
+        rand_num = np.random.randint(0, num_requests)
         if rand_num not in index:
             index.append(rand_num)
     index.sort()
@@ -82,7 +84,7 @@ for i in range(num_min):
 
     ini = ini + one_min
 
-print("Total number riding requests: " + str(numRequestsRed))
+print("Total number riding requests: ", tot_num_requests_red)
 
 #Import PV profiles
 df_pvprofile = pd.read_csv('PV_norm.csv')
@@ -92,27 +94,55 @@ pv_cloud_pm = df_pvprofile['Cloud pm']
 
 # Parameters to tune
 c_RES_total = np.array([])
+c_RES_total_1day = np.array([])
 c_RES_aux = [0.00001, 0.0001, 0.001, 0.1, 0.1, 0.001, 0.0005, 0.0001, 0.00001, 0.000001]
 h_aux = np.array([])
+h_aux_1day = np.array([])
 h_aux_bid = [0.00001, 0.001, 0.1, 0.5, 0.75, 0.75, 0.5, 0.05, 0.00001, 0.000001]
 h_aux_bid_min = [0, 0, 0.09, 0.35, 0.55, 0.55, 0.35, 0.04, 0, 0]
 b_aux_min = [10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
 alpha_w_total = np.array([])
+alpha_w_total_1day = np.array([])
 alpha_w_aux = [0, 0, 0.01, 0.05, 0.1, 0.1, 0.1, 0.05, 0, 0]
 beta_w_total = np.array([])
+beta_w_total_1day = np.array([])
 beta_w_aux = [0, 0.1, 0.1, 0.1, 0.08, 0.05, 0.01, 0, 0, 0]
 h_aux_min = np.array([])
+h_aux_min_1day = np.array([])
 b_aux = np.array([])
+b_aux_1day = np.array([])
+
+num_min_aux = 18*60
 for i in range(len(c_RES_aux)):
-    c_RES_total_aux = 1*c_RES_aux[i]*np.ones(num_min // (len(c_RES_aux)))
-    c_RES_total = np.concatenate([c_RES_total, c_RES_total_aux])
-    alpha_w_total_aux = 1*alpha_w_aux[i]*np.ones(num_min // (len(alpha_w_aux)))
-    alpha_w_total = np.concatenate([alpha_w_total, alpha_w_total_aux])
-    beta_w_total_aux = 1*beta_w_aux[i]*np.ones(num_min // (len(beta_w_aux)))
-    beta_w_total = np.concatenate([beta_w_total, beta_w_total_aux])
-    h_aux1 = 1*h_aux_bid[i]*np.ones(num_min // (len(h_aux_bid)))
-    h_aux = np.concatenate([h_aux, h_aux1])
-    h_aux1_min = 1*h_aux_bid_min[i]*np.ones(num_min // (len(h_aux_bid_min)))
-    h_aux_min = np.concatenate([h_aux_min, h_aux1_min])
-    b_aux1 = 1*b_aux_min[i]*np.ones(num_min // (len(b_aux_min)))
-    b_aux = np.concatenate([b_aux, b_aux1])
+    c_RES_total_aux = 1*c_RES_aux[i]*np.ones(num_min_aux // (len(c_RES_aux)))
+    c_RES_total_1day = np.concatenate([c_RES_total_1day, c_RES_total_aux])
+    alpha_w_total_aux = 1*alpha_w_aux[i]*np.ones(num_min_aux // (len(alpha_w_aux)))
+    alpha_w_total_1day = np.concatenate([alpha_w_total_1day, alpha_w_total_aux])
+    beta_w_total_aux = 1*beta_w_aux[i]*np.ones(num_min_aux // (len(beta_w_aux)))
+    beta_w_total_1day = np.concatenate([beta_w_total_1day, beta_w_total_aux])
+    h_aux1 = 1*h_aux_bid[i]*np.ones(num_min_aux // (len(h_aux_bid)))
+    h_aux_1day = np.concatenate([h_aux_1day, h_aux1])
+    h_aux1_min = 1*h_aux_bid_min[i]*np.ones(num_min_aux // (len(h_aux_bid_min)))
+    h_aux_min_1day = np.concatenate([h_aux_min_1day, h_aux1_min])
+    b_aux1 = 1*b_aux_min[i]*np.ones(num_min_aux // (len(b_aux_min)))
+    b_aux_1day = np.concatenate([b_aux_1day, b_aux1])
+
+zero_vec = [0 for i in range(6*60)]
+zero_vec1 = [0.00001 for i in range(6*60)]
+zero_vec_b = [10 for i in range(6*60)]
+
+c_RES_total_1day = np.concatenate([zero_vec1, c_RES_total_1day])
+alpha_w_total_1day = np.concatenate([zero_vec, alpha_w_total_1day])
+beta_w_total_1day = np.concatenate([zero_vec, beta_w_total_1day])
+h_aux_1day = np.concatenate([zero_vec1, h_aux_1day])
+h_aux_min_1day = np.concatenate([zero_vec, h_aux_min_1day])
+b_aux_1day = np.concatenate([zero_vec_b, b_aux_1day])
+
+tot_day = int(np.ceil((h_in + num_min/60)/24))
+for i in range(tot_day):
+    c_RES_total = np.concatenate([c_RES_total_1day, c_RES_total])
+    alpha_w_total = np.concatenate([alpha_w_total_1day, alpha_w_total])
+    beta_w_total = np.concatenate([beta_w_total_1day, beta_w_total])
+    h_aux = np.concatenate([h_aux_1day, h_aux])
+    h_aux_min = np.concatenate([h_aux_min_1day, h_aux_min])
+    b_aux = np.concatenate([b_aux_1day, b_aux])
