@@ -6,8 +6,6 @@ case_name = sys.argv[1]
 # Enter number of iterations
 num_iter = 100
 
-numReq = np.load('numReq.npy')
-h_format = np.load('h_format.npy')
 y_power_cars = np.load('y_power_cars1.npy')
 miss_ride_time = np.load('miss_ride_time1.npy')
 high_battery_time = np.load('high_battery_time1.npy')
@@ -17,7 +15,6 @@ ev_ride_time = np.load('ev_ride_time1.npy')
 ev_charge_time = np.load('ev_charge_time1.npy')
 ev_idle_time = np.load('ev_idle_time1.npy')
 if case_name == "rideSharing":
-    y_Pref_current = np.load('y_Pref_current.npy')
     incent_charge_assigned = np.load('incent_charge_assigned1.npy')
     incent_ride_assigned = np.load('incent_ride_assigned1.npy')
 
@@ -58,17 +55,6 @@ print("  --- Vehicles with high battery: " + str(high_battery_time[-1]))
 print("Missed ride-req, sum min by min: " + str(sum(miss_ride_time)))
 print("Missed ride-req, rounded 5-min sum: " + str(
     int(sum(np.rint(np.sum(np.array(miss_ride_time).reshape(len(miss_ride_time) // time_slot, time_slot), axis=1))))))
-print("QoS: " + str(100 - (int(sum(np.rint(
-    np.sum(np.array(miss_ride_time).reshape(len(miss_ride_time) // time_slot, time_slot), axis=1))))) / numReq * 100))
-
-if case_name == "rideSharing":
-    lost_power_percent = 0
-    for i in range(len(y_Pref_current)):
-        if sum(y_Pref_current[i]) > sum(y_power_cars[i]):
-            lost_power_percent += (sum(y_Pref_current[i]) - sum(y_power_cars[i]))
-
-    tot_Pref = sum([sum(i) for i in y_Pref_current])
-    print("Power lost: " + str(round((lost_power_percent / tot_Pref) * 100, 2)) + "%")
 
 # Save results for later
 path = ''
