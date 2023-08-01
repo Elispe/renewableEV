@@ -30,8 +30,8 @@ sunny_1day = np.array(tData.pv_sunny)
 cloud_am_1day = np.array(tData.pv_cloud_am)
 # cloud_pm_1day = np.array(tData.pv_cloud_pm)
 charge_req_prob = sunny_1day
-# if more than 1 day
-# charge_req_prob = np.concatenate((sunny_1day, cloud_am_1day, sunny_1day))
+# if simulation window runs after midnight
+# charge_req_prob = np.concatenate((sunny_1day, cloud_am_1day))
 
 # Variable initialization
 delta_ride = 2  # Max zones away from customer for pick-up

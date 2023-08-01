@@ -63,7 +63,7 @@ for i in range(num_min):
     # print(str(numRequests) + " requests between " + str(ini) + " and " + str(ini + one_min))
     scalingFactor = 8
     num_requests_red = round(num_requests / scalingFactor)
-    print("Keep: ", num_requests_red)
+    # print("Keep: ", num_requests_red)
 
     tot_num_requests_red += num_requests_red
 
