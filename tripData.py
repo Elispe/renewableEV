@@ -9,24 +9,29 @@ import datetime
 
 np.random.seed(8)
 
-#Import yellow taxi data
+# Import yellow taxi data
 trips = pq.read_table('yellow_tripdata_2022-03.parquet')
 trips = trips.to_pandas()
 
-#Choose which days you want the data for
-mask = (trips['tpep_pickup_datetime'] >= '2022-03-01') & (trips['tpep_pickup_datetime'] < '2022-03-02')
+# Choose which days you want the data for
+mask = (trips['tpep_pickup_datetime'] >= '2022-03-01') & (trips['tpep_pickup_datetime'] < '2022-03-03')
 oneDayTrips = trips.loc[mask]
 selectedTrips = oneDayTrips.loc[:, ['tpep_pickup_datetime', 'PULocationID', 'DOLocationID']]
 orderedTrips = selectedTrips.sort_values(by="tpep_pickup_datetime")
 
-#Import locationID map
+# Import locationID map
 df = pd.read_csv('taxiZones.csv')
 df = df.loc[:, ['LocationID', 'Borough', 'Zone']]
 ManhattanLoc = df.loc[df['Borough'] == 'Manhattan']
 ManhattanLoc = ManhattanLoc.loc[:, ['LocationID', 'Zone']]
 
-#Group zones into 18 areas
-darea = {'LocationID': [12, 13, 261, 87, 88, 209, 125, 211, 144, 231, 45, 148, 232, 158, 249, 113, 114, 79, 4, 68, 90, 234, 107, 224, 246, 100, 186, 164, 170, 137, 50, 48, 230, 163, 161, 162, 229, 233, 143, 142, 239, 141, 140, 237, 24, 151, 238, 236, 263, 262, 166, 41, 74, 75, 42, 152, 116], 'Area': [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 15, 16, 16, 17, 17, 18, 18, 18]}
+# Group zones into 18 areas
+darea = {
+    'LocationID': [12, 13, 261, 87, 88, 209, 125, 211, 144, 231, 45, 148, 232, 158, 249, 113, 114, 79, 4, 68, 90, 234,
+                   107, 224, 246, 100, 186, 164, 170, 137, 50, 48, 230, 163, 161, 162, 229, 233, 143, 142, 239, 141,
+                   140, 237, 24, 151, 238, 236, 263, 262, 166, 41, 74, 75, 42, 152, 116],
+    'Area': [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8, 8, 9, 9, 9, 10, 10, 10, 10,
+             11, 11, 11, 11, 12, 12, 12, 13, 13, 13, 14, 14, 14, 15, 15, 15, 16, 16, 17, 17, 18, 18, 18]}
 dfArea = pd.DataFrame(data=darea)
 areasTable = pd.merge(ManhattanLoc, dfArea, how='left', left_on=['LocationID'], right_on=['LocationID'])
 areas = areasTable.loc[:, ['LocationID', 'Area']]
@@ -40,15 +45,15 @@ final = final.loc[maskNaN]
 final['PUArea'] = final['PUArea'].astype('Int64')
 final['DOArea'] = final['DOArea'].astype('Int64')
 
-#Keep only trips within the 9 areas in lower Manhattan
+# Keep only trips within the 9 areas in lower Manhattan
 mask9 = (final['PUArea'] <= 9) & (final['DOArea'] <= 9)
 final9 = final.loc[mask9]
 
-#Keep only ride requests received within the time window specified below
+# Keep only ride requests received within the time window specified below
 h_in = 6
 ini = datetime.datetime(2022, 3, 1, h_in, 0, 0)
 one_min = datetime.timedelta(seconds=60)
-num_min = 18*60 # 18 hours
+num_min = 18 * 60 + 15  # 18 hours
 
 records = {}
 tot_num_requests_red = 0
@@ -86,7 +91,7 @@ for i in range(num_min):
 
 print("Total number riding requests: ", tot_num_requests_red)
 
-#Import PV profiles
+# Import PV profiles
 df_pvprofile = pd.read_csv('PV_norm.csv')
 pv_sunny = df_pvprofile['Sunny']
 pv_cloud_am = df_pvprofile['Cloud am']
@@ -112,24 +117,24 @@ h_aux_min_1day = np.array([])
 b_aux = np.array([])
 b_aux_1day = np.array([])
 
-num_min_aux = 18*60
+num_min_aux = 18 * 60
 for i in range(len(c_RES_aux)):
-    c_RES_total_aux = 1*c_RES_aux[i]*np.ones(num_min_aux // (len(c_RES_aux)))
+    c_RES_total_aux = 1 * c_RES_aux[i] * np.ones(num_min_aux // (len(c_RES_aux)))
     c_RES_total_1day = np.concatenate([c_RES_total_1day, c_RES_total_aux])
-    alpha_w_total_aux = 1*alpha_w_aux[i]*np.ones(num_min_aux // (len(alpha_w_aux)))
+    alpha_w_total_aux = 1 * alpha_w_aux[i] * np.ones(num_min_aux // (len(alpha_w_aux)))
     alpha_w_total_1day = np.concatenate([alpha_w_total_1day, alpha_w_total_aux])
-    beta_w_total_aux = 1*beta_w_aux[i]*np.ones(num_min_aux // (len(beta_w_aux)))
+    beta_w_total_aux = 1 * beta_w_aux[i] * np.ones(num_min_aux // (len(beta_w_aux)))
     beta_w_total_1day = np.concatenate([beta_w_total_1day, beta_w_total_aux])
-    h_aux1 = 1*h_aux_bid[i]*np.ones(num_min_aux // (len(h_aux_bid)))
+    h_aux1 = 1 * h_aux_bid[i] * np.ones(num_min_aux // (len(h_aux_bid)))
     h_aux_1day = np.concatenate([h_aux_1day, h_aux1])
-    h_aux1_min = 1*h_aux_bid_min[i]*np.ones(num_min_aux // (len(h_aux_bid_min)))
+    h_aux1_min = 1 * h_aux_bid_min[i] * np.ones(num_min_aux // (len(h_aux_bid_min)))
     h_aux_min_1day = np.concatenate([h_aux_min_1day, h_aux1_min])
-    b_aux1 = 1*b_aux_min[i]*np.ones(num_min_aux // (len(b_aux_min)))
+    b_aux1 = 1 * b_aux_min[i] * np.ones(num_min_aux // (len(b_aux_min)))
     b_aux_1day = np.concatenate([b_aux_1day, b_aux1])
 
-zero_vec = [0 for i in range(6*60)]
-zero_vec1 = [0.00001 for i in range(6*60)]
-zero_vec_b = [10 for i in range(6*60)]
+zero_vec = [0 for i in range(6 * 60)]
+zero_vec1 = [0.00001 for i in range(6 * 60)]
+zero_vec_b = [10 for i in range(6 * 60)]
 
 c_RES_total_1day = np.concatenate([zero_vec1, c_RES_total_1day])
 alpha_w_total_1day = np.concatenate([zero_vec, alpha_w_total_1day])
@@ -138,7 +143,7 @@ h_aux_1day = np.concatenate([zero_vec1, h_aux_1day])
 h_aux_min_1day = np.concatenate([zero_vec, h_aux_min_1day])
 b_aux_1day = np.concatenate([zero_vec_b, b_aux_1day])
 
-tot_day = int(np.ceil((h_in + num_min/60)/24))
+tot_day = int(np.ceil((h_in + num_min / 60) / 24))
 for i in range(tot_day):
     c_RES_total = np.concatenate([c_RES_total_1day, c_RES_total])
     alpha_w_total = np.concatenate([alpha_w_total_1day, alpha_w_total])

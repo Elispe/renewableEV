@@ -48,7 +48,7 @@ ev_idle_time = np.rint(ev_idle_time / num_iter)
 # Avg results
 time_slot = 15  # 15-min time slots
 
-print("  *** Avg results *** ")
+print("  *** Avg " + str(num_iter) + " iterations *** ")
 print("  --- Vehicles with low battery: " + str(low_battery_time[-1]))
 print("  --- Vehicles with int battery: " + str(int_battery_time[-1]))
 print("  --- Vehicles with high battery: " + str(high_battery_time[-1]))
