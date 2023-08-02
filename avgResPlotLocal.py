@@ -45,6 +45,9 @@ if case_name == "rideSharing":
     print("Power lost: " + str(round((lost_power_percent / tot_Pref) * 100, 2)) + "%")
 
 # Plots
+for stri in range(len(h_format)):
+    h_format[stri] = h_format[stri].replace('00:', '24:')
+
 # Pref and missing rides
 
 plt.rcParams.update({"text.usetex": True, "font.family": "lmodern", "font.size": 12})
