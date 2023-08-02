@@ -31,7 +31,7 @@ infeasib_threas = 1e4
 travel_edge_time = 10
 in_value = 1.0 / n_veh  # for initialization of x_ij
 
-# Random SOC array
+# Generate random soc array
 random_soc = [np.random.uniform(Vehicle.min_charge, Vehicle.full_charge) for n in range(n_veh)]
 
 # DiGraph - unweighted
@@ -53,7 +53,7 @@ for j in range(n_veh // numNodes):
 for j in range(n_veh - len(vehicles)):
     vehicles.append(Vehicle(np.random.randint(1, numNodes + 1), Vehicle.full_charge))
 
-# Randomize the initial soc, otherwise comment below
+# Randomize the initial soc, otherwise comment below to get fully charged EV
 for j, veh in enumerate(vehicles):
     veh.set_soc(random_soc[j])
 
@@ -70,17 +70,17 @@ ev_charge_time = []
 ev_idle_time = []
 h_format = []
 
-# Iterate over requests, deltaT = 1 min
+# Iterate over time, deltaT = 1 min
 for k in range(tData.num_min):
+    minute = k + tData.h_in * 60
     PULoc = tData.records[k][0]
     DOLoc = tData.records[k][1]
-    minute = k + tData.h_in * 60
-    numRideReq = len(PULoc)
+    num_ride_req = len(PULoc)
     h_format.append(time.strftime("%H:%M", time.gmtime(minute * 60)))
-    # to run over multiple days use code below instead and modify tripData.py
+    # to run over multiple days use code below instead
     # dt = datetime.datetime(2022, 3, 1) - datetime.datetime(1970, 1, 1)
     # minutessince = int(dt.total_seconds() / 60)
-    # h_format.append(time.strftime("%b %d %H:%M", time.gmtime((minutessince+minute) * 60)))
+    # h_format.append(time.strftime("%b %d %H:%M", time.gmtime((minutessince + minute) * 60)))
 
     print("*** Minute: " + str(k) + " ***")
 
@@ -103,7 +103,7 @@ for k in range(tData.num_min):
         if veh.is_available() and not veh.is_charging() and veh.get_soc() < Vehicle.min_charge:
             veh.charge()
 
-    # Update vehicle state-of-charge
+    # Update vehicle soc
     # If vehicle is fully charged, disconnect
     for veh in vehicles:
         if veh.get_estimated_arrival() >= k:
@@ -111,7 +111,7 @@ for k in range(tData.num_min):
         elif veh.is_charging():
             veh.charge(charge_rate)
 
-    # Track SOC status
+    # Track soc status
     low_soc_count = 0
     int_soc_count = 0
     high_soc_count = 0
@@ -128,7 +128,7 @@ for k in range(tData.num_min):
     high_battery_time.append(high_soc_count)
 
     # Track EV availability
-    riding_ev_count = 0
+    riding_ev_count = 0  # number of EVs attending a ride req
     for v in vehicles:
         if isinstance(v.get_request(), RideRequest):
             riding_ev_count += 1
@@ -137,7 +137,7 @@ for k in range(tData.num_min):
     ev_idle_time.append(n_veh - (riding_ev_count + Vehicle.ev_charging_count))
 
     # Generate a ride request
-    for i in range(numRideReq):
+    for i in range(num_ride_req):
         # Create a ride request
         ride_req = RideRequest(PULoc[i], DOLoc[i], k, nx.shortest_path(g, source=PULoc[i], target=DOLoc[i]))
         req_vec.insert(req_idx, ride_req)
@@ -145,7 +145,7 @@ for k in range(tData.num_min):
         # Compute cost of reaching the pickup point for each vehicle
         for j, veh in enumerate(vehicles):
             start_path[j] = nx.shortest_path(g, source=veh.get_position(),
-                                             target=ride_req.get_origin())  # Path from vehicle node to pick-up node
+                                             target=ride_req.get_origin())  # Path from vehicle node to request origin
             if not veh.is_available() or \
                     veh.get_soc() < min_consume + (
                     len(start_path[j]) + len(ride_req.get_path()) - 2) * travel_edge_time * discharge_rate or \
@@ -182,7 +182,7 @@ for k in range(tData.num_min):
     else:
         cost = np.array(cost).transpose()
 
-    # Assignment problem, only riding part
+    # Solve assignment problem, only riding part
     Kout = 2  # Iterations
 
     xi = [[0 for col in range(Kout + 1)] for row in range(n_assign * n_assign)]
@@ -198,7 +198,7 @@ for k in range(tData.num_min):
                 req_j = ii * (1 + jj) + (n_assign - ii) * jj
                 cost_function[req_j] = cost[ii][jj]
 
-        # Solve the outer problem using PuLP, a Python toolbox
+        # Solve using PuLP, a Python toolbox
         prob = pulp.LpProblem("AssignmentProblem", pulp.LpMinimize)
 
         x_list = []
@@ -266,7 +266,6 @@ print("QoS: ", 100 - (sum(miss_ride_time) / tData.tot_num_requests_red * 100))
 # Save results for later
 path = ''
 np.save(path + 'h_format', h_format)
-np.save(path + 'numReq', tData.tot_num_requests_red)
 np.save(path + 'miss_ride_time' + str(seed), miss_ride_time)
 np.save(path + 'y_power_cars' + str(seed), y_power_cars)
 np.save(path + 'high_battery_time' + str(seed), high_battery_time)

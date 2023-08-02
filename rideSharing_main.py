@@ -1,6 +1,6 @@
 # This is the main Python script for case1 and case2.
 # Both ride and charge requests are sent to the ride-service provider.
-# Include ride-sharing option
+# Ride-sharing option included.
 
 import numpy as np
 import networkx as nx
@@ -25,7 +25,7 @@ np.random.seed(seed)
 # Fleet size
 n_veh = 100
 
-# generation profile, select data to import depending on time window
+# Generation profile, select data to import depending on time window
 sunny_1day = np.array(tData.pv_sunny)
 # cloud_am_1day = np.array(tData.pv_cloud_am)
 # cloud_pm_1day = np.array(tData.pv_cloud_pm)
@@ -47,9 +47,8 @@ travel_edge_time = 10
 in_value = 1.0 / n_veh  # for initialization of x_ij
 station_power = 25  # kW generated at peak power
 
-# Random SOC array
+# Generate random soc array
 random_soc = [np.random.uniform(Vehicle.min_charge, Vehicle.full_charge) for n in range(n_veh)]
-random_noise = [np.random.binomial(1, charge_req_prob[minu]) for minu in range(24 * tData.tot_day * 60)]
 
 # DiGraph - unweighted
 g = nx.DiGraph()
@@ -70,9 +69,12 @@ for j in range(n_veh // numNodes):
 for j in range(n_veh - len(vehicles)):
     vehicles.append(Vehicle(np.random.randint(1, numNodes + 1), Vehicle.full_charge))
 
-# Randomize the initial soc, otherwise comment below
+# Randomize the initial soc, otherwise comment below to get fully charged EV
 for j, veh in enumerate(vehicles):
     veh.set_soc(random_soc[j])
+
+# Generate random noise for sending charge requests
+random_noise = [np.random.binomial(1, charge_req_prob[minu]) for minu in range(24 * tData.tot_day * 60)]
 
 # Track charging
 y_Pref_current = []
@@ -93,6 +95,7 @@ h_format = []
 incent_ride_assigned = []
 incent_charge_assigned = []
 
+# Iterate over time, deltaT = 1 min
 for k in range(tData.num_min):
     minute = k + tData.h_in * 60
     PULoc = tData.records[k][0]
@@ -149,7 +152,7 @@ for k in range(tData.num_min):
                 future_cars_charging[station_nodes.index(veh.get_request().get_origin())] -= 1
                 veh.remove()
 
-    # Update vehicle state-of-charge
+    # Update vehicle soc
     # If vehicle is fully charged, disconnect
     for veh in vehicles:
         if veh.get_estimated_arrival() >= k and not veh.is_charging():
@@ -160,7 +163,7 @@ for k in range(tData.num_min):
                 cars_charging[station_nodes.index(veh.get_request().get_origin())] -= 1
                 veh.terminate_request()  # Vehicle again available
 
-    # Track SOC status
+    # Track soc status
     low_soc_count = 0
     int_soc_count = 0
     high_soc_count = 0
@@ -244,7 +247,7 @@ for k in range(tData.num_min):
                 charge_req_idx += 1
                 req_idx += 1
 
-                # Compute cost of reaching the charging station point for each vehicle
+                # Compute cost of reaching the charging station for each vehicle
                 for j, veh in enumerate(vehicles):
                     start_path_charge[j] = nx.shortest_path(g, source=veh.get_position(),
                                                             target=charge_req.get_origin())  # Path to charging station
@@ -466,15 +469,14 @@ for k in range(tData.num_min):
             future_cars_charging[station_nodes.index(vehicles[veh_idx].get_request().get_origin())] += 1
             vehicles[veh_idx].remove()
         else:
-            print("Wrong request assignment")
+            raise ValueError("Wrong request assignment")
 
     y_power_cars.append(np.array(cars_charging) * power_transferred)
 
     count_assigned_rides = 0
     for v in vehicles:
-        if v.get_request() in req_vec and isinstance(v.request, RideRequest):
+        if v.get_request() in req_vec and isinstance(v.get_request(), RideRequest):
             count_assigned_rides += 1
-
     if count_assigned_rides == ride_req_idx:
         miss_ride_time.append(0)
     else:
@@ -483,7 +485,7 @@ for k in range(tData.num_min):
     # Test
     for i in range(len(low_battery_time)):
         if not low_battery_time[i] + int_battery_time[i] + high_battery_time[i] == n_veh:
-            raise Exception("ERROR: wrong soc estimate")
+            raise ValueError("Wrong soc estimate")
 
 # Results
 time_slot = 15  # 15-min time slots
@@ -503,7 +505,6 @@ print("Power lost: " + str(round((lost_power_percent / tot_Pref) * 100, 2)) + "%
 # Save results for later
 path = ''
 np.save(path + 'h_format', h_format)
-np.save(path + 'numReq', tData.tot_num_requests_red)
 np.save(path + 'y_Pref_current', y_Pref_current)
 np.save(path + 'miss_ride_time' + str(seed), miss_ride_time)
 np.save(path + 'y_power_cars' + str(seed), y_power_cars)

@@ -151,3 +151,7 @@ for i in range(tot_day):
     h_aux = np.concatenate([h_aux_1day, h_aux])
     h_aux_min = np.concatenate([h_aux_min_1day, h_aux_min])
     b_aux = np.concatenate([b_aux_1day, b_aux])
+
+# Save results for later
+path = ''
+np.save(path + 'numReq', tot_num_requests_red)
