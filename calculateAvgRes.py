@@ -14,7 +14,7 @@ low_battery_time = np.load('low_battery_time1.npy')
 ev_ride_time = np.load('ev_ride_time1.npy')
 ev_charge_time = np.load('ev_charge_time1.npy')
 ev_idle_time = np.load('ev_idle_time1.npy')
-if case_name == "rideSharing":
+if case_name == "case1or2":
     incent_charge_assigned = np.load('incent_charge_assigned1.npy')
     incent_ride_assigned = np.load('incent_ride_assigned1.npy')
 
@@ -27,14 +27,14 @@ for i in range(2, num_iter + 1):
     ev_ride_time += np.load('ev_ride_time' + str(i) + '.npy')
     ev_charge_time += np.load('ev_charge_time' + str(i) + '.npy')
     ev_idle_time += np.load('ev_idle_time' + str(i) + '.npy')
-    if case_name == "rideSharing":
+    if case_name == "case1or2":
         incent_charge_assigned += np.load('incent_charge_assigned' + str(i) + '.npy')
         incent_ride_assigned += np.load('incent_ride_assigned' + str(i) + '.npy')
 
 # Average data, not rounded
 y_power_cars = y_power_cars / num_iter
 miss_ride_time = miss_ride_time / num_iter
-if case_name == "rideSharing":
+if case_name == "case1or2":
     incent_charge_assigned = incent_charge_assigned / num_iter
     incent_ride_assigned = incent_ride_assigned / num_iter
 # Average data, rounded
@@ -66,6 +66,6 @@ np.save(path + 'low_battery_time', low_battery_time)
 np.save(path + 'ev_ride_time', ev_ride_time)
 np.save(path + 'ev_charge_time', ev_charge_time)
 np.save(path + 'ev_idle_time', ev_idle_time)
-if case_name == "rideSharing":
+if case_name == "case1or2":
     np.save(path + 'incent_charge_assigned', incent_charge_assigned)
     np.save(path + 'incent_ride_assigned', incent_ride_assigned)

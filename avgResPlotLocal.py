@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Specify the case considered
-case_name = "rideSharing"
+case_name = "case1or2"
 # case_name = "businessAsUsual"
 
 numReq = np.load('numReq.npy')
@@ -17,7 +17,7 @@ low_battery_time = np.load('low_battery_time.npy')
 ev_ride_time = np.load('ev_ride_time.npy')
 ev_charge_time = np.load('ev_charge_time.npy')
 ev_idle_time = np.load('ev_idle_time.npy')
-if case_name == "rideSharing":
+if case_name == "case1or2":
     y_Pref_current = np.load('y_Pref_current.npy')
     incent_charge_assigned = np.load('incent_charge_assigned.npy')
     incent_ride_assigned = np.load('incent_ride_assigned.npy')
@@ -35,7 +35,7 @@ print("Missed ride-req, rounded 5-min sum: " + str(
 print("QoS: " + str(100 - (int(sum(np.rint(
     np.sum(np.array(miss_ride_time).reshape(len(miss_ride_time) // time_slot, time_slot), axis=1))))) / numReq * 100))
 
-if case_name == "rideSharing":
+if case_name == "case1or2":
     lost_power_percent = 0
     for i in range(len(y_Pref_current)):
         if sum(y_Pref_current[i]) > sum(y_power_cars[i]):
@@ -59,7 +59,7 @@ host.set_xlabel("Time")
 host.set_ylabel("Power [kW]")
 ax3.set_ylabel("Missed ride requests")
 ax3.locator_params(axis="y", integer=True, tight=True)
-if case_name == 'rideSharing':
+if case_name == 'case1or2':
     p1 = host.plot(h_format, [sum(i) for i in y_Pref_current], label='$P_{\mathrm{ref}}$', color="#1EBFE1")
     p1b = host.plot(h_format, [sum(i) for i in y_power_cars], label='$v_{\mathrm{ch}} p_{\mathrm{ch}}$',
                     color="#1E5EE1")
@@ -77,7 +77,6 @@ host.set_xticklabels(h_format[::360])
 plt.savefig(case_name + "_MissRide_avg.pdf", bbox_inches='tight')
 
 # SOC
-
 
 fig3, ax3 = plt.subplots(figsize=(4.3, 3), tight_layout=True)
 ax3.bar(h_format, high_battery_time, width=1.0, alpha=0.5, label="High SOC", color="limegreen")
@@ -105,7 +104,7 @@ ax7.margins(y=0)
 ax7.legend(loc='upper center', fontsize="11", bbox_to_anchor=(0.48, 1.25), ncol=3)
 fig7.savefig(case_name + '_EV_avg.pdf', bbox_inches='tight')
 
-if case_name == 'rideSharing':
+if case_name == 'case1or2':
     # Pref and charging profile at each station
 
     plt.rcParams.update({"text.usetex": True, "font.family": "lmodern", "font.size": 7.5})
