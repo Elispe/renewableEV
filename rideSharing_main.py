@@ -79,6 +79,7 @@ random_noise = [np.random.binomial(1, charge_req_prob[minu]) for minu in range(2
 # Track charging
 y_Pref_current = []
 y_power_cars = []
+y_power_cars_tot = []
 station_nodes = [3, 5, 8, 9]  # nodes where charging facilities exist
 cars_charging = [0] * len(station_nodes)
 future_cars_charging = [0] * len(station_nodes)
@@ -151,6 +152,12 @@ for k in range(tData.num_min):
             elif veh.get_estimated_charged() - min_travel_time <= k and veh.is_charging() and not veh.is_removed():
                 future_cars_charging[station_nodes.index(veh.get_request().get_origin())] -= 1
                 veh.remove()
+        # Uncomment below to charge idling EVs at night during grid off-peak hours
+        # off_peak_thr = 4 * 60
+        # if veh.is_available() and not veh.is_charging() and veh.get_soc() < Vehicle.int_charge:
+        #     for day in range(tData.tot_day):
+        #         if 0 + day * 24 * 60 <= minute < off_peak_thr + day * 24 * 60:
+        #             veh.charge()
 
     # Update vehicle soc
     # If vehicle is fully charged, disconnect
@@ -159,7 +166,7 @@ for k in range(tData.num_min):
             veh.discharge(discharge_rate)
         elif veh.is_charging():
             veh.charge(charge_rate)
-            if veh.soc >= Vehicle.full_charge:
+            if veh.soc >= Vehicle.full_charge and isinstance(veh.get_request(), ChargeRequest):
                 cars_charging[station_nodes.index(veh.get_request().get_origin())] -= 1
                 veh.terminate_request()  # Vehicle again available
 
@@ -185,7 +192,7 @@ for k in range(tData.num_min):
     for v in vehicles:
         if isinstance(v.get_request(), RideRequest):
             riding_ev_count += 1
-        elif isinstance(v.get_request(), ChargeRequest):
+        elif isinstance(v.get_request(), ChargeRequest) or v.is_charging():
             charging_ev_count += 1
     ev_ride_time.append(riding_ev_count)
     ev_charge_time.append(charging_ev_count)
@@ -206,6 +213,7 @@ for k in range(tData.num_min):
                     veh.get_soc() < min_consume + (
                     len(start_path[j]) + len(ride_req.get_path()) - 2) * travel_edge_time * discharge_rate or \
                     veh.get_soc() < Vehicle.min_charge or \
+                    veh.is_charging() or \
                     delta_ride < len(start_path[j]) - 1:
                 start_costs[j] = infeasib_cost
             elif isinstance(veh.get_request(), RideRequest):  # check if ride can be shared
@@ -267,6 +275,7 @@ for k in range(tData.num_min):
     if not req_idx:
         print("No real request at this time!")
         y_power_cars.append(np.array(cars_charging) * power_transferred)
+        y_power_cars_tot.append(Vehicle.ev_charging_count * power_transferred)
         miss_ride_time.append(0)
         incent_ride_assigned.append(0)
         incent_charge_assigned.append(0)
@@ -274,6 +283,7 @@ for k in range(tData.num_min):
     elif sum([sum(cost[i]) for i in range(req_idx)]) == infeasib_cost * n_veh * req_idx:
         print("WARNING: No feasible request at this time!")
         y_power_cars.append(np.array(cars_charging) * power_transferred)
+        y_power_cars_tot.append(Vehicle.ev_charging_count * power_transferred)
         incent_ride_assigned.append(0)
         incent_charge_assigned.append(0)
         if ride_req_idx:
@@ -472,6 +482,7 @@ for k in range(tData.num_min):
             raise ValueError("Wrong request assignment")
 
     y_power_cars.append(np.array(cars_charging) * power_transferred)
+    y_power_cars_tot.append(Vehicle.ev_charging_count * power_transferred)
 
     count_assigned_rides = 0
     for v in vehicles:
@@ -482,10 +493,16 @@ for k in range(tData.num_min):
     else:
         miss_ride_time.append(ride_req_idx - count_assigned_rides)
 
-    # Test
+    # Tests
     for i in range(len(low_battery_time)):
         if not low_battery_time[i] + int_battery_time[i] + high_battery_time[i] == n_veh:
             raise ValueError("Wrong soc estimate")
+        if not ev_idle_time[i] + ev_ride_time[i] + ev_charge_time[i] == n_veh:
+            raise ValueError("Wrong ev availability")
+
+    for veh in vehicles:
+        if veh.is_charging() and isinstance(veh.get_request(), RideRequest):
+            raise ValueError("EV cannot charge and ride at the same time")
 
 # Results
 time_slot = 15  # 15-min time slots
@@ -508,6 +525,7 @@ np.save(path + 'h_format', h_format)
 np.save(path + 'y_Pref_current', y_Pref_current)
 np.save(path + 'miss_ride_time' + str(seed), miss_ride_time)
 np.save(path + 'y_power_cars' + str(seed), y_power_cars)
+np.save(path + 'y_power_cars_tot' + str(seed), y_power_cars_tot)
 np.save(path + 'high_battery_time' + str(seed), high_battery_time)
 np.save(path + 'int_battery_time' + str(seed), int_battery_time)
 np.save(path + 'low_battery_time' + str(seed), low_battery_time)
