@@ -250,10 +250,15 @@ for k in range(tData.num_min):
     else:
         miss_ride_time.append(req_idx - count_assigned_rides)
 
-    # Test
+    # Tests
     for i in range(len(low_battery_time)):
         if not low_battery_time[i] + int_battery_time[i] + high_battery_time[i] == n_veh:
             raise ValueError("Wrong soc estimate")
+        if not ev_idle_time[i] + ev_ride_time[i] + ev_charge_time[i] == n_veh:
+            raise ValueError("Wrong ev availability")
+    for veh in vehicles:
+        if veh.is_charging() and isinstance(veh.get_request(), RideRequest):
+            raise ValueError("EV cannot charge and ride at the same time")
 
 # Results
 time_slot = 15  # 15-min time slots
