@@ -202,11 +202,20 @@ print("  *** Results *** ")
 print("Missed ride-req, sum min by min: ", sum(miss_ride_time))
 print("QoS: ", 100 - (sum(miss_ride_time) / tData.tot_num_requests_red * 100))
 
-# Plots
+# Save results for later
+path = ''
+np.save(path + 'h_format', h_format)
+np.save(path + 'miss_ride_time', miss_ride_time)
+np.save(path + 'ev_ride_time', ev_ride_time)
+np.save(path + 'ev_idle_time', ev_idle_time)
 
-# EV request status
+# Plots
 plt.rcParams.update({"text.usetex": True, "font.family": "lmodern", "font.size": 14})
 plt.rcParams['axes.xmargin'] = 0
+for stri in range(len(h_format)):
+    h_format[stri] = h_format[stri].replace('00:', '24:')
+
+# EV request status
 
 fig7, ax7 = plt.subplots(figsize=(6.5, 3.5), tight_layout=True)
 ax7.bar(h_format, ev_idle_time, width=1.0, alpha=0.6, label="Idling", color="#C53AA6")
@@ -220,8 +229,6 @@ ax7.legend(loc='upper center', fontsize="14", bbox_to_anchor=(0.5, 1.25), ncol=3
 fig7.savefig('fossil_EV_avg.pdf', bbox_inches='tight')
 
 # Pref and missing rides
-plt.rcParams.update({"text.usetex": True, "font.family": "lmodern", "font.size": 14})
-plt.rcParams['axes.xmargin'] = 0
 
 fig, ax3 = plt.subplots(figsize=(6.5, 3.5), tight_layout=True)  # layout='constrained')  # (width, height) in inches
 ax3.set_xlabel("Time")
