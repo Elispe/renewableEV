@@ -65,7 +65,7 @@ for i in range(num_min):
     PU_arr = final9min['PUArea'].tolist()
     DO_arr = final9min['DOArea'].tolist()
 
-    # print(str(numRequests) + " requests between " + str(ini) + " and " + str(ini + one_min))
+    # print(str(num_requests) + " requests between " + str(ini) + " and " + str(ini + one_min))
     scalingFactor = 8
     num_requests_red = round(num_requests / scalingFactor)
     # print("Keep: ", num_requests_red)
