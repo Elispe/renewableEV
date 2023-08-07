@@ -78,8 +78,8 @@ random_noise = [np.random.binomial(1, charge_req_prob[minu]) for minu in range(2
 
 # Track charging
 y_Pref_current = []
-y_power_cars = []
-y_power_cars_tot = []
+y_power_cars = []  # only renewable
+y_power_cars_tot = []  # includes also night charging (if allowed)
 station_nodes = [3, 5, 8, 9]  # nodes where charging facilities exist
 cars_charging = [0] * len(station_nodes)
 future_cars_charging = [0] * len(station_nodes)
@@ -494,12 +494,10 @@ for k in range(tData.num_min):
         miss_ride_time.append(ride_req_idx - count_assigned_rides)
 
     # Tests
-    for i in range(len(low_battery_time)):
-        if not low_battery_time[i] + int_battery_time[i] + high_battery_time[i] == n_veh:
-            raise ValueError("Wrong soc estimate")
-        if not ev_idle_time[i] + ev_ride_time[i] + ev_charge_time[i] == n_veh:
-            raise ValueError("Wrong ev availability")
-
+    if not low_battery_time[-1] + int_battery_time[-1] + high_battery_time[-1] == n_veh:
+        raise ValueError("Wrong soc estimate")
+    if not ev_idle_time[-1] + ev_ride_time[-1] + ev_charge_time[-1] == n_veh:
+        raise ValueError("Wrong ev availability")
     for veh in vehicles:
         if veh.is_charging() and isinstance(veh.get_request(), RideRequest):
             raise ValueError("EV cannot charge and ride at the same time")
