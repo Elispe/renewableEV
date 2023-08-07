@@ -102,6 +102,12 @@ for k in range(tData.num_min):
         # If vehicle runs out of battery ---> must charge, becomes unavailable
         if veh.is_available() and not veh.is_charging() and veh.get_soc() < Vehicle.min_charge:
             veh.charge()
+        # Uncomment below to charge idling EVs at night during grid off-peak hours
+        # off_peak_thr = 4 * 60
+        # if veh.is_available() and not veh.is_charging() and veh.get_soc() < Vehicle.int_charge:
+        #     for day in range(tData.tot_day):
+        #         if 0 + day * 24 * 60 <= minute < off_peak_thr + day * 24 * 60:
+        #             veh.charge()
 
     # Update vehicle soc
     # If vehicle is fully charged, disconnect
@@ -251,11 +257,10 @@ for k in range(tData.num_min):
         miss_ride_time.append(req_idx - count_assigned_rides)
 
     # Tests
-    for i in range(len(low_battery_time)):
-        if not low_battery_time[i] + int_battery_time[i] + high_battery_time[i] == n_veh:
-            raise ValueError("Wrong soc estimate")
-        if not ev_idle_time[i] + ev_ride_time[i] + ev_charge_time[i] == n_veh:
-            raise ValueError("Wrong ev availability")
+    if not low_battery_time[-1] + int_battery_time[-1] + high_battery_time[-1] == n_veh:
+        raise ValueError("Wrong soc estimate")
+    if not ev_idle_time[-1] + ev_ride_time[-1] + ev_charge_time[-1] == n_veh:
+        raise ValueError("Wrong ev availability")
     for veh in vehicles:
         if veh.is_charging() and isinstance(veh.get_request(), RideRequest):
             raise ValueError("EV cannot charge and ride at the same time")
