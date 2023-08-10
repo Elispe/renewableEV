@@ -16,7 +16,7 @@ from Request import RideRequest
 from Request import ChargeRequest
 
 # Customer's willingness to share a ride:
-sharing_prob = 0.75  # Enter value between 0 and 1
+sharing_prob = 0  # Enter value between 0 and 1
 
 # Seed corresponds to SLURM_ARRAY_TASK_ID
 seed = int(sys.argv[1])
@@ -109,7 +109,7 @@ for k in range(tData.num_min):
     alpha_w = tData.alpha_w_total[minute]
     beta_w = tData.beta_w_total[minute]
     h_format.append(time.strftime("%H:%M", time.gmtime(minute * 60)))
-    # to run over multiple days use code below instead
+    # for simulation period longer than 24 h, use code below instead
     # dt = datetime.datetime(2022, 3, 1) - datetime.datetime(1970, 1, 1)
     # minutessince = int(dt.total_seconds() / 60)
     # h_format.append(time.strftime("%b %d %H:%M", time.gmtime((minutessince + minute) * 60)))
