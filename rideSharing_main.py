@@ -322,12 +322,6 @@ for k in range(tData.num_min):
         if n_veh < req_idx:
             skip = req_idx - n_veh
 
-    for kreq in range(ride_req_idx, req_idx):  # to do: remove these incentives
-        for kk in range(n_veh):
-            yStar[kk + (n_veh + skip) * kreq] = 0.01 * (Vehicle.full_charge - vehicles[kk].get_soc())
-        if n_veh < req_idx:
-            skip = req_idx - n_veh
-
     y = [[0 for col in range(Kout)] for row in range(n_assign * n_assign)]
     xi = [[0 for col in range(Kout + 1)] for row in range(n_assign * n_assign)]
     # Initialize with xi inside the feasible set, i.e. satisfies the constraints.
